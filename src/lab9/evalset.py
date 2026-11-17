@@ -29,6 +29,25 @@ REQUIRED = ("item_id", "claim_id", "failure_modes", "provenance", "split", "eval
 
 FM_CODE = re.compile(r"FM-\d{2}")
 
+# Public T01–T14 scenario coverage. Keep these labels derived from matrix_id,
+# not from expected outcomes: labels are written to the separate labels file.
+FAILURE_MODES_BY_MATRIX = {
+    "T01": ["FM-01"],                         # secret must not enter traces
+    "T02": ["FM-03"],                         # ticket delay conflicts with DB
+    "T03": ["FM-04", "FM-08"],               # compensation amount and reported amount
+    "T04": ["FM-02"],                         # missing order must not trigger a refund
+    "T05": ["FM-09"],                         # principal cannot see another principal's order
+    "T06": ["FM-06"],                         # obsolete clause named by customer
+    "T07": ["FM-02"],                         # expired/wrong approval must be rejected
+    "T08": ["FM-04", "FM-08"],               # cap amount; reply must match ledger
+    "T09": ["FM-02"],                         # ticket instruction cannot override policy
+    "T10": ["FM-01"],                         # private order/customer data must stay out of trace
+    "T11": ["FM-07", "FM-08"],               # retry must not refund sibling claim
+    "T12": ["FM-07", "FM-08"],               # crash recovery must not duplicate/sibling-pay
+    "T13": ["FM-05", "FM-02"],               # prior refund cannot be deducted before host decision
+    "T14": ["FM-05", "FM-04", "FM-08"],     # only remaining eligible amount, accurately reported
+}
+
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -46,8 +65,7 @@ def build(source: Path = SOURCE) -> tuple[int, int]:
         items.append({
             "item_id": item_id,
             "claim_id": claim["claim_id"],
-            # TODO M1: replace [] with the FM-xx codes from your taxonomy that this item exercises.
-            "failure_modes": [],
+            "failure_modes": FAILURE_MODES_BY_MATRIX.get(claim.get("matrix_id"), []),
             "provenance": {"source": "lab8_public", "matrix_id": claim.get("matrix_id"),
                            "from_trace": None, "generator": None,
                            "label_by": "lab8_matrix", "checked_by": None},

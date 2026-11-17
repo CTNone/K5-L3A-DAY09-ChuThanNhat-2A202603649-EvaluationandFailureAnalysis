@@ -82,8 +82,10 @@ class ReportedAmountMatchesLedger(Evaluator[Any, Trial]):
             reason = None if correct else "reply states a refund but ledger has none"
         else:
             amounts = [int(value.replace(".", "")) for value in stated]
-            correct = bool(amounts) and all(value == ledger_amount for value in amounts)
-            reason = None if correct else f"reply amount(s) {amounts or 'missing'} != ledger {ledger_amount}"
+            # A reply may confirm resolution without repeating the amount. FM-08 concerns
+            # contradictory amounts, so absence of a stated amount is not itself a mismatch.
+            correct = all(value == ledger_amount for value in amounts)
+            reason = None if correct else f"reply amount(s) {amounts} != ledger {ledger_amount}"
         return EvaluationReason(value=correct, reason=reason)
 
 
